@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0d0d1a;
+    --surface: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #e0e0f0;
+    --text-dim: #6b6b8a;
+    --work: #ff6347;
+    --work-glow: rgba(255,99,71,0.35);
+    --short-break: #4ecdc4;
+    --short-glow: rgba(78,205,196,0.35);
+    --long-break: #a78bfa;
+    --long-glow: rgba(167,139,250,0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    background: var(--current-glow, var(--work-glow));
+    filter: blur(80px);
+    opacity: 0.5;
+    pointer-events: none;
+    transition: background 0.6s ease;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    padding: 30px;
+    width: 100%;
+    max-width: 380px;
+    transition: opacity 0.15s ease;
+  }
+
+  .title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .modes {
+    display: flex;
+    background: var(--surface);
+    border-radius: 30px;
+    padding: 4px;
+    gap: 2px;
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+  }
+
+  .mode-btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 26px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-dim);
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .mode-btn.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .mode-btn:not(.active):hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .timer-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timer-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.06);
+    stroke-width: 6;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: var(--current-color, var(--work));
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.6s ease;
+    filter: drop-shadow(0 0 8px var(--current-glow, var(--work-glow)));
+  }
+
+  .timer-text {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .time {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  .mode-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    transition: color 0.6s ease;
+  }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+  }
+
+  .btn:hover {
+    border-color: rgba(255,255,255,0.2);
+    transform: scale(1.08);
+  }
+
+  .btn:active {
+    transform: scale(0.95);
+  }
+
+  .btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--text);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .btn-start {
+    width: 64px;
+    height: 64px;
+    background: var(--current-color, var(--work));
+    border: none;
+    box-shadow: 0 0 24px var(--current-glow, var(--work-glow));
+    transition: background 0.6s ease, box-shadow 0.6s ease, transform 0.25s ease;
+  }
+
+  .btn-start:hover {
+    box-shadow: 0 0 36px var(--current-glow, var(--work-glow));
+  }
+
+  .btn-start svg {
+    stroke: #fff;
+    width: 24px;
+    height: 24px;
+  }
+
+  .btn-reset svg {
+    stroke: var(--text-dim);
+  }
+
+  .counter {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    transition: all 0.4s ease;
+  }
+
+  .dot.done {
+    background: var(--current-color, var(--work));
+    box-shadow: 0 0 6px var(--current-glow, var(--work-glow));
+  }
+
+  .counter-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="title">Pomodoro</div>
+
+  <div class="modes">
+    <button class="mode-btn active" data-mode="work">Focus</button>
+    <button class="mode-btn" data-mode="shortBreak">Short Break</button>
+    <button class="mode-btn" data-mode="longBreak">Long Break</button>
+  </div>
+
+  <div class="timer-container">
+    <svg class="timer-ring" viewBox="0 0 280 280">
+      <circle class="ring-bg" cx="140" cy="140" r="130"/>
+      <circle class="ring-progress" id="ringProgress" cx="140" cy="140" r="130"
+        stroke-dasharray="816.814"
+        stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-text">
+      <span class="time" id="timerDisplay">25:00</span>
+      <span class="mode-label" id="modeLabel">Focus</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-reset" id="btnReset" title="Reset (R)">
+      <svg viewBox="0 0 24 24">
+        <polyline points="1 4 1 10 7 10"/>
+        <path d="M3.5 17.5A9 9 0 1 0 2.1 10.5"/>
+      </svg>
+    </button>
+
+    <button class="btn btn-start" id="btnStart" title="Start / Pause (Space)">
+      <svg id="iconPlay" viewBox="0 0 24 24">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+      <svg id="iconPause" viewBox="0 0 24 24" style="display:none">
+        <rect x="5" y="3" width="5" height="18"/>
+        <rect x="14" y="3" width="5" height="18"/>
+      </svg>
+    </button>
+
+    <button class="btn" id="btnSkip" title="Skip">
+      <svg viewBox="0 0 24 24">
+        <polygon points="13 3 19 12 13 21 13 3"/>
+        <polygon points="5 3 11 12 5 21 5 3"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="counter" id="counterWrap">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <span class="counter-label" id="counterLabel">0 / 8</span>
+  </div>
+</div>
+
+<script type="module">
+import { invoke } from '@tauri-apps/api/core';
+
+const CONFIG = {
+  work: 25 * 60,
+  shortBreak: 5 * 60,
+  longBreak: 15 * 60,
+};
+
+const CIRCUMFERENCE = 2 * Math.PI * 130;
+const LABELS = { work: 'Focus', shortBreak: 'Short Break', longBreak: 'Long Break' };
+
+let state = {
+  mode: 'work',
+  remaining: CONFIG.work,
+  total: CONFIG.work,
+  running: false,
+  completed: 0,
+  intervalId: null,
+};
+
+const $ = (id) => document.getElementById(id);
+const ring = $('ringProgress');
+const timerDisplay = $('timerDisplay');
+const modeLabel = $('modeLabel');
+const btnStart = $('btnStart');
+const iconPlay = $('iconPlay');
+const iconPause = $('iconPause');
+const app = $('app');
+const counterLabel = $('counterLabel');
+const dots = document.querySelectorAll('.dot');
+const modeBtns = document.querySelectorAll('.mode-btn');
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
+function setProgress(fraction) {
+  ring.setAttribute('stroke-dashoffset', CIRCUMFERENCE * (1 - fraction));
+}
+
+function updateDisplay() {
+  timerDisplay.textContent = formatTime(state.remaining);
+  setProgress(state.remaining / state.total);
+  modeLabel.textContent = LABELS[state.mode];
+}
+
+function setModeTheme(mode) {
+  const themes = {
+    work:       { color: 'var(--work)',        glow: 'var(--work-glow)' },
+    shortBreak: { color: 'var(--short-break)', glow: 'var(--short-glow)' },
+    longBreak:  { color: 'var(--long-break)',  glow: 'var(--long-glow)' },
+  };
+  const t = themes[mode];
+  document.documentElement.style.setProperty('--current-color', t.color);
+  document.documentElement.style.setProperty('--current-glow', t.glow);
+}
+
+function updateTray() {
+  invoke('update_tray_tooltip', { text: `${LABELS[state.mode]}: ${formatTime(state.remaining)}` }).catch(() => {});
+}
+
+function updateDots() {
+  dots.forEach((d, i) => d.classList.toggle('done', i < state.completed));
+  counterLabel.textContent = `${state.completed} / 8`;
+}
+
+async function notify(title, body) {
+  try { await invoke('send_notification', { title, body }); } catch {}
+}
+
+function switchMode(mode) {
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.running = false;
+  state.mode = mode;
+  state.total = CONFIG[mode];
+  state.remaining = state.total;
+  updateDisplay();
+  setModeTheme(mode);
+  updateTray();
+  iconPlay.style.display = '';
+  iconPause.style.display = 'none';
+  modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
+
+function tick() {
+  if (state.remaining <= 0) { finish(); return; }
+  state.remaining--;
+  updateDisplay();
+  if (state.remaining % 30 === 0) updateTray();
+}
+
+function startTimer() {
+  state.running = true;
+  iconPlay.style.display = 'none';
+  iconPause.style.display = '';
+  state.intervalId = setInterval(tick, 1000);
+  updateTray();
+}
+
+function pauseTimer() {
+  state.running = false;
+  iconPlay.style.display = '';
+  iconPause.style.display = 'none';
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+}
+
+function reset() {
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.running = false;
+  state.remaining = state.total;
+  iconPlay.style.display = '';
+  iconPause.style.display = 'none';
+  updateDisplay();
+  updateTray();
+}
+
+function skip() {
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.remaining = 0;
+  finish();
+}
+
+async function finish() {
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.running = false;
+
+  if (state.mode === 'work') {
+    state.completed = Math.min(state.completed + 1, 8);
+    updateDots();
+    state.mode = state.completed > 0 && state.completed % 4 === 0 ? 'longBreak' : 'shortBreak';
+    await notify('Time for a break!', `Focus session done. Take a ${state.mode === 'longBreak' ? 'long (15m)' : 'short (5m)'} break.`);
+  } else {
+    state.mode = 'work';
+    await notify('Break over!', 'Time to focus.');
+  }
+
+  state.total = CONFIG[state.mode];
+  state.remaining = state.total;
+  updateDisplay();
+  setModeTheme(state.mode);
+  updateTray();
+
+  // Pulse
+  app.style.opacity = '0.85';
+  setTimeout(() => app.style.opacity = '1', 200);
+  setTimeout(() => app.style.opacity = '0.85', 400);
+  setTimeout(() => app.style.opacity = '1', 600);
+
+  iconPlay.style.display = '';
+  iconPause.style.display = 'none';
+  modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === state.mode));
+}
+
+// Events
+btnStart.addEventListener('click', () => state.running ? pauseTimer() : startTimer());
+$('btnReset').addEventListener('click', reset);
+$('btnSkip').addEventListener('click', skip);
+modeBtns.forEach(b => b.addEventListener('click', () => switchMode(b.dataset.mode)));
+
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'BUTTON') return;
+  if (e.code === 'Space') { e.preventDefault(); state.running ? pauseTimer() : startTimer(); }
+  else if (e.code === 'KeyR') reset();
+});
+
+setModeTheme('work');
+updateDisplay();
+updateTray();
+</script>
+</body>
+</html>

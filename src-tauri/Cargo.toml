@@ -1,0 +1,15 @@
+[package]
+name = "pomodoro-timer"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+
+[package.metadata]
+name = "Pomodoro Timer"
+description = "A beautiful desktop Pomodoro timer"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
