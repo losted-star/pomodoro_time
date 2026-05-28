@@ -5,27 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pomodoro Timer</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
   :root {
-    --bg: #0d0d1a;
-    --surface: rgba(255,255,255,0.04);
-    --border: rgba(255,255,255,0.08);
-    --text: #e0e0f0;
-    --text-dim: #6b6b8a;
-    --work: #ff6347;
-    --work-glow: rgba(255,99,71,0.35);
-    --short-break: #4ecdc4;
-    --short-glow: rgba(78,205,196,0.35);
-    --long-break: #a78bfa;
-    --long-glow: rgba(167,139,250,0.35);
+    --bg: #0a0a0c;
+    --text: #e4e0d8;
+    --text-dim: #5a5750;
+    --border: rgba(255,255,255,0.06);
+    --border-hover: rgba(255,255,255,0.15);
+    --work: #c8963e;
+    --work-dim: rgba(200,150,62,0.25);
+    --short-break: #65a69f;
+    --short-dim: rgba(101,166,159,0.25);
+    --long-break: #9580b8;
+    --long-dim: rgba(149,128,184,0.25);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background: var(--bg);
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: radial-gradient(ellipse at 50% 42%, #15141a 0%, #0a0a0c 70%);
     color: var(--text);
     display: flex;
     align-items: center;
@@ -34,21 +34,16 @@
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+    cursor: default;
   }
 
-  body::before {
-    content: '';
+  /* SVG grain texture */
+  .grain {
     position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 340px; height: 340px;
-    border-radius: 50%;
-    background: var(--current-glow, var(--work-glow));
-    filter: blur(80px);
-    opacity: 0.5;
-    pointer-events: none;
-    transition: background 0.6s ease;
+    inset: 0;
     z-index: 0;
+    pointer-events: none;
+    opacity: 0.028;
   }
 
   .app {
@@ -57,59 +52,63 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 22px;
-    padding: 30px;
+    gap: 30px;
+    padding: 36px 40px;
     width: 100%;
     max-width: 380px;
-    transition: opacity 0.15s ease;
   }
 
-  .title {
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 4px;
+  .brand {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 6px;
     text-transform: uppercase;
     color: var(--text-dim);
   }
 
+  /* ── Mode selector ── */
   .modes {
     display: flex;
-    background: var(--surface);
-    border-radius: 30px;
-    padding: 4px;
-    gap: 2px;
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--border);
+    gap: 26px;
+    align-items: center;
   }
 
   .mode-btn {
-    padding: 8px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.6px;
     border: none;
-    border-radius: 26px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    background: transparent;
+    background: none;
     color: var(--text-dim);
-    transition: all 0.3s ease;
-    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 0;
+    position: relative;
+    transition: color 0.5s ease;
   }
 
-  .mode-btn.active {
-    background: rgba(255,255,255,0.1);
-    color: var(--text);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  .mode-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: center;
   }
 
-  .mode-btn:not(.active):hover {
-    color: var(--text);
-    background: rgba(255,255,255,0.04);
-  }
+  .mode-btn.active { color: var(--text); }
+  .mode-btn.active::after { transform: translateX(-50%) scaleX(1); }
+  .mode-btn:not(.active):hover { color: rgba(228,224,216,0.65); }
 
+  /* ── Timer ring ── */
   .timer-container {
     position: relative;
-    width: 280px;
-    height: 280px;
+    width: 272px;
+    height: 272px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,164 +116,222 @@
 
   .timer-ring {
     position: absolute;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     transform: rotate(-90deg);
   }
 
-  .ring-bg {
+  .ring-track {
     fill: none;
-    stroke: rgba(255,255,255,0.06);
-    stroke-width: 6;
+    stroke: rgba(255,255,255,0.035);
+    stroke-width: 2.5;
   }
 
   .ring-progress {
     fill: none;
     stroke: var(--current-color, var(--work));
-    stroke-width: 6;
+    stroke-width: 2.5;
     stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear, stroke 0.6s ease;
-    filter: drop-shadow(0 0 8px var(--current-glow, var(--work-glow)));
+    transition: stroke-dashoffset 0.9s linear, stroke 0.6s ease;
   }
 
-  .timer-text {
+  .ring-flash {
+    fill: none;
+    stroke: rgba(255,255,255,0.7);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 816.814;
+    stroke-dashoffset: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease-out;
+  }
+
+  .timer-inner {
     position: absolute;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   .time {
-    font-size: 56px;
-    font-weight: 700;
-    letter-spacing: 2px;
+    font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+    font-size: 68px;
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: 1px;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
+    line-height: 1;
+    color: var(--text);
+    transition: color 0.6s ease;
+    font-optical-sizing: auto;
   }
 
   .mode-label {
-    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
     font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
     color: var(--text-dim);
-    letter-spacing: 1px;
     transition: color 0.6s ease;
   }
 
+  /* ── Controls ── */
   .controls {
     display: flex;
-    gap: 12px;
+    gap: 24px;
     align-items: center;
   }
 
   .btn {
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     border: 1px solid var(--border);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
-    background: var(--surface);
-    backdrop-filter: blur(8px);
-  }
-
-  .btn:hover {
-    border-color: rgba(255,255,255,0.2);
-    transform: scale(1.08);
-  }
-
-  .btn:active {
-    transform: scale(0.95);
+    transition: all 0.35s ease;
+    background: transparent;
+    position: relative;
   }
 
   .btn svg {
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
     fill: none;
-    stroke: var(--text);
-    stroke-width: 2;
+    stroke: var(--text-dim);
+    stroke-width: 1.5;
     stroke-linecap: round;
     stroke-linejoin: round;
+    transition: stroke 0.35s ease;
   }
+
+  .btn:hover { border-color: var(--border-hover); }
+  .btn:hover svg { stroke: var(--text); }
+  .btn:active { transform: scale(0.93); transition: transform 0.1s ease; }
 
   .btn-start {
-    width: 64px;
-    height: 64px;
-    background: var(--current-color, var(--work));
-    border: none;
-    box-shadow: 0 0 24px var(--current-glow, var(--work-glow));
-    transition: background 0.6s ease, box-shadow 0.6s ease, transform 0.25s ease;
-  }
-
-  .btn-start:hover {
-    box-shadow: 0 0 36px var(--current-glow, var(--work-glow));
+    width: 60px;
+    height: 60px;
+    border: 2px solid rgba(255,255,255,0.12);
+    background: transparent;
+    transition: all 0.5s ease;
   }
 
   .btn-start svg {
-    stroke: #fff;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
+    stroke: var(--text);
+    stroke-width: 1.8;
   }
 
-  .btn-reset svg {
-    stroke: var(--text-dim);
+  .btn-start:hover {
+    border-color: var(--current-color, var(--work));
+    background: var(--current-color, var(--work));
   }
 
+  .btn-start:hover svg { stroke: var(--bg); }
+
+  .btn-start.running {
+    border-color: var(--current-color, var(--work));
+  }
+
+  .btn-start.running svg { stroke: var(--current-color, var(--work)); }
+  .btn-start.running:hover svg { stroke: var(--bg); }
+
+  /* ── Counter ── */
   .counter {
     display: flex;
-    gap: 6px;
+    gap: 7px;
     align-items: center;
   }
 
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.15);
-    transition: all 0.4s ease;
+    background: rgba(255,255,255,0.05);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dot.done {
     background: var(--current-color, var(--work));
-    box-shadow: 0 0 6px var(--current-glow, var(--work-glow));
   }
 
   .counter-label {
-    font-size: 11px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
     color: var(--text-dim);
-    margin-left: 6px;
-    letter-spacing: 0.5px;
+    margin-left: 3px;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* ── Completion flash ── */
+  .flash {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 42%, rgba(255,255,255,0.05) 0%, transparent 60%);
+    opacity: 0;
+  }
+
+  .flash.fire {
+    opacity: 1;
+    transition: opacity 0s;
+  }
+
+  .flash.fade {
+    opacity: 0;
+    transition: opacity 0.7s ease-out;
   }
 </style>
 </head>
 <body>
-<div class="app" id="app">
-  <div class="title">Pomodoro</div>
 
-  <div class="modes">
+<!-- Grain texture via SVG filter -->
+<svg class="grain" aria-hidden="true">
+  <filter id="noise">
+    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+  <rect width="100%" height="100%" filter="url(#noise)"/>
+</svg>
+
+<div class="flash" id="flash"></div>
+
+<div class="app" id="app">
+
+  <div class="brand">Pomodoro</div>
+
+  <div class="modes" id="modes">
     <button class="mode-btn active" data-mode="work">Focus</button>
-    <button class="mode-btn" data-mode="shortBreak">Short Break</button>
-    <button class="mode-btn" data-mode="longBreak">Long Break</button>
+    <button class="mode-btn" data-mode="shortBreak">Break</button>
+    <button class="mode-btn" data-mode="longBreak">Long</button>
   </div>
 
   <div class="timer-container">
-    <svg class="timer-ring" viewBox="0 0 280 280">
-      <circle class="ring-bg" cx="140" cy="140" r="130"/>
-      <circle class="ring-progress" id="ringProgress" cx="140" cy="140" r="130"
+    <svg class="timer-ring" viewBox="0 0 272 272">
+      <circle class="ring-track" cx="136" cy="136" r="130"/>
+      <circle class="ring-progress" id="ringProgress" cx="136" cy="136" r="130"
         stroke-dasharray="816.814"
         stroke-dashoffset="0"/>
+      <circle class="ring-flash" id="ringFlash" cx="136" cy="136" r="130"/>
     </svg>
-    <div class="timer-text">
+    <div class="timer-inner">
       <span class="time" id="timerDisplay">25:00</span>
       <span class="mode-label" id="modeLabel">Focus</span>
     </div>
   </div>
 
   <div class="controls">
-    <button class="btn btn-reset" id="btnReset" title="Reset (R)">
+    <button class="btn" id="btnReset" title="Reset (R)">
       <svg viewBox="0 0 24 24">
         <polyline points="1 4 1 10 7 10"/>
         <path d="M3.5 17.5A9 9 0 1 0 2.1 10.5"/>
@@ -286,8 +343,8 @@
         <polygon points="5 3 19 12 5 21 5 3"/>
       </svg>
       <svg id="iconPause" viewBox="0 0 24 24" style="display:none">
-        <rect x="5" y="3" width="5" height="18"/>
-        <rect x="14" y="3" width="5" height="18"/>
+        <rect x="6" y="3" width="4" height="18" rx="0.5"/>
+        <rect x="14" y="3" width="4" height="18" rx="0.5"/>
       </svg>
     </button>
 
@@ -310,6 +367,7 @@
     <div class="dot"></div>
     <span class="counter-label" id="counterLabel">0 / 8</span>
   </div>
+
 </div>
 
 <script type="module">
@@ -322,7 +380,7 @@ const CONFIG = {
 };
 
 const CIRCUMFERENCE = 2 * Math.PI * 130;
-const LABELS = { work: 'Focus', shortBreak: 'Short Break', longBreak: 'Long Break' };
+const LABELS = { work: 'Focus', shortBreak: 'Break', longBreak: 'Long Break' };
 
 let state = {
   mode: 'work',
@@ -334,16 +392,20 @@ let state = {
 };
 
 const $ = (id) => document.getElementById(id);
-const ring = $('ringProgress');
+const ring       = $('ringProgress');
+const ringFlash  = $('ringFlash');
 const timerDisplay = $('timerDisplay');
-const modeLabel = $('modeLabel');
-const btnStart = $('btnStart');
-const iconPlay = $('iconPlay');
-const iconPause = $('iconPause');
-const app = $('app');
+const modeLabel  = $('modeLabel');
+const btnStart   = $('btnStart');
+const iconPlay   = $('iconPlay');
+const iconPause  = $('iconPause');
+const app        = $('app');
 const counterLabel = $('counterLabel');
-const dots = document.querySelectorAll('.dot');
-const modeBtns = document.querySelectorAll('.mode-btn');
+const flash      = $('flash');
+const dots       = document.querySelectorAll('.dot');
+const modeBtns   = document.querySelectorAll('.mode-btn');
+
+/** ── Helpers ── */
 
 function formatTime(s) {
   const m = Math.floor(s / 60);
@@ -361,19 +423,20 @@ function updateDisplay() {
   modeLabel.textContent = LABELS[state.mode];
 }
 
-function setModeTheme(mode) {
-  const themes = {
-    work:       { color: 'var(--work)',        glow: 'var(--work-glow)' },
-    shortBreak: { color: 'var(--short-break)', glow: 'var(--short-glow)' },
-    longBreak:  { color: 'var(--long-break)',  glow: 'var(--long-glow)' },
+function setTheme(mode) {
+  const map = {
+    work:       { color: 'var(--work)',        dim: 'var(--work-dim)' },
+    shortBreak: { color: 'var(--short-break)', dim: 'var(--short-dim)' },
+    longBreak:  { color: 'var(--long-break)',  dim: 'var(--long-dim)' },
   };
-  const t = themes[mode];
-  document.documentElement.style.setProperty('--current-color', t.color);
-  document.documentElement.style.setProperty('--current-glow', t.glow);
+  document.documentElement.style.setProperty('--current-color', map[mode].color);
+  document.documentElement.style.setProperty('--current-dim',  map[mode].dim);
 }
 
 function updateTray() {
-  invoke('update_tray_tooltip', { text: `${LABELS[state.mode]}: ${formatTime(state.remaining)}` }).catch(() => {});
+  invoke('update_tray_tooltip', {
+    text: `${LABELS[state.mode]}: ${formatTime(state.remaining)}`
+  }).catch(() => {});
 }
 
 function updateDots() {
@@ -385,25 +448,35 @@ async function notify(title, body) {
   try { await invoke('send_notification', { title, body }); } catch {}
 }
 
-function switchMode(mode) {
-  clearInterval(state.intervalId);
-  state.intervalId = null;
-  state.running = false;
-  state.mode = mode;
-  state.total = CONFIG[mode];
-  state.remaining = state.total;
-  updateDisplay();
-  setModeTheme(mode);
-  updateTray();
-  iconPlay.style.display = '';
-  iconPause.style.display = 'none';
-  modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+/** ── Flash overlay ── */
+
+function fireFlash() {
+  flash.classList.remove('fade');
+  flash.classList.add('fire');
+  requestAnimationFrame(() => {
+    flash.classList.remove('fire');
+    flash.classList.add('fade');
+  });
 }
+
+function fireRingFlash() {
+  const offset = CIRCUMFERENCE * (1 - state.remaining / state.total);
+  ringFlash.setAttribute('stroke-dashoffset', offset);
+  ringFlash.style.opacity = '1';
+  ringFlash.style.transition = 'none';
+  requestAnimationFrame(() => {
+    ringFlash.style.transition = 'opacity 0.7s ease-out';
+    ringFlash.style.opacity = '0';
+  });
+}
+
+/** ── Timer actions ── */
 
 function tick() {
   if (state.remaining <= 0) { finish(); return; }
   state.remaining--;
-  updateDisplay();
+  timerDisplay.textContent = formatTime(state.remaining);
+  setProgress(state.remaining / state.total);
   if (state.remaining % 30 === 0) updateTray();
 }
 
@@ -411,6 +484,7 @@ function startTimer() {
   state.running = true;
   iconPlay.style.display = 'none';
   iconPause.style.display = '';
+  btnStart.classList.add('running');
   state.intervalId = setInterval(tick, 1000);
   updateTray();
 }
@@ -419,6 +493,7 @@ function pauseTimer() {
   state.running = false;
   iconPlay.style.display = '';
   iconPause.style.display = 'none';
+  btnStart.classList.remove('running');
   clearInterval(state.intervalId);
   state.intervalId = null;
 }
@@ -430,6 +505,7 @@ function reset() {
   state.remaining = state.total;
   iconPlay.style.display = '';
   iconPause.style.display = 'none';
+  btnStart.classList.remove('running');
   updateDisplay();
   updateTray();
 }
@@ -441,16 +517,36 @@ function skip() {
   finish();
 }
 
+function switchMode(mode) {
+  clearInterval(state.intervalId);
+  state.intervalId = null;
+  state.running = false;
+  state.mode = mode;
+  state.total = CONFIG[mode];
+  state.remaining = state.total;
+  updateDisplay();
+  setTheme(mode);
+  updateTray();
+  iconPlay.style.display = '';
+  iconPause.style.display = 'none';
+  btnStart.classList.remove('running');
+  modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
+
 async function finish() {
   clearInterval(state.intervalId);
   state.intervalId = null;
   state.running = false;
 
+  fireFlash();
+  fireRingFlash();
+
   if (state.mode === 'work') {
     state.completed = Math.min(state.completed + 1, 8);
     updateDots();
     state.mode = state.completed > 0 && state.completed % 4 === 0 ? 'longBreak' : 'shortBreak';
-    await notify('Time for a break!', `Focus session done. Take a ${state.mode === 'longBreak' ? 'long (15m)' : 'short (5m)'} break.`);
+    await notify('Time for a break!',
+      `Focus session done. ${state.mode === 'longBreak' ? 'Long break (15m).' : 'Short break (5m).'}`);
   } else {
     state.mode = 'work';
     await notify('Break over!', 'Time to focus.');
@@ -459,33 +555,34 @@ async function finish() {
   state.total = CONFIG[state.mode];
   state.remaining = state.total;
   updateDisplay();
-  setModeTheme(state.mode);
+  setTheme(state.mode);
   updateTray();
-
-  // Pulse
-  app.style.opacity = '0.85';
-  setTimeout(() => app.style.opacity = '1', 200);
-  setTimeout(() => app.style.opacity = '0.85', 400);
-  setTimeout(() => app.style.opacity = '1', 600);
 
   iconPlay.style.display = '';
   iconPause.style.display = 'none';
+  btnStart.classList.remove('running');
   modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === state.mode));
 }
 
-// Events
+/** ── Events ── */
+
 btnStart.addEventListener('click', () => state.running ? pauseTimer() : startTimer());
 $('btnReset').addEventListener('click', reset);
 $('btnSkip').addEventListener('click', skip);
 modeBtns.forEach(b => b.addEventListener('click', () => switchMode(b.dataset.mode)));
 
 document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'BUTTON') return;
-  if (e.code === 'Space') { e.preventDefault(); state.running ? pauseTimer() : startTimer(); }
-  else if (e.code === 'KeyR') reset();
+  if (e.code === 'Space') {
+    e.preventDefault();
+    state.running ? pauseTimer() : startTimer();
+  } else if (e.code === 'KeyR') {
+    reset();
+  }
 });
 
-setModeTheme('work');
+/** ── Init ── */
+
+setTheme('work');
 updateDisplay();
 updateTray();
 </script>
